@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fake API and Images</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; margin: 20px; background: #f7f9fb; color: #333; }
+    h1 { color: #1f4e79; text-align: center}
+    table { width: 100%; border-collapse: collapse; background: #fff; margin-top: 16px; box-shadow: 0 0 12px rgba(0,0,0,.08); }
+    th, td { padding: 10px 8px; border: 1px solid #d9dee4; text-align: left; vertical-align: middle; }
+    th { background: #eef4fb; color: #1f4e79; }
+    img.avatar { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; }
+    .status { margin: 10px 0; color: #555; }
+    .error { color: #c0392b; }
+  </style>
+</head>
+<body>
+  <h1>Fake API and Images</h1>
+  <section style="background:#fff; padding:16px; border:1px solid #d9dee4; border-radius:8px; margin-bottom:16px; display:flex; align-items:center;">
+    <img src="logo.png" alt="Profile Picture" style="width:120px;height:120px;object-fit:cover;border-radius:8px;margin-right:16px;" />
+    <div>
+      <p><strong>Name:</strong> Richard Sungcad</p>
+      <p><strong>Idname:</strong> rsungcad</p>
+      <p><strong>Email:</strong> richard.sungcad@nmsc.edu.ph</p>
+      <p><strong>Address:</strong> Pagadian City</p>
+      <p><strong>Country:</strong> Philippines</p>
+      <p><strong>ZIP:</strong> 7016</p>
+    </div>
+  </section>
+  <div style="margin-bottom: 12px; display: flex; gap: 10px; align-items: center;">
+    <p class="status">Fetching user data from <code>https://fake-json-api.mock.beeceptor.com/users</code>...</p>
+    <button id="retry-btn" style="padding: 6px 12px; font-weight: bold; border: 1px solid #1f4e79; background: #e7f1ff; color: #1f4e79; border-radius: 4px; cursor: pointer;">Retry</button>
+  </div>
+  <table id="users-table">
+    <thead>
+      <tr>
+        <th>Picture</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Company</th>
+        <th>Address</th>
+        <th>Country</th>
+        <th>ZIP</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function loadUsers() {
+      const statusEl = document.querySelector('.status');
+      const tbody = document.querySelector('#users-table tbody');
+      try {
+        const res = await fetch('https://fake-json-api.mock.beeceptor.com/users');
+        if (!res.ok) throw new Error('Network response was not ok (' + res.status + ')');
+        const data = await res.json();
+        if (!Array.isArray(data)) throw new Error('Unexpected response format');
+
+        if (!data.length) {
+          statusEl.textContent = 'No users found.';
+          return;
+        }
+
+        statusEl.textContent = `Loaded ${data.length} users.`;
+
+        data.forEach(user => {
+          const tr = document.createElement('tr');
+
+          const pictureUrl = user.picture || user.avatar || 'https://via.placeholder.com/120';
+          const name = `${user.name?.first || ''} ${user.name?.last || ''}`.trim() || user.name || '[No name]';
+          const address = [user.address?.street, user.address?.city, user.address?.state].filter(Boolean).join(', ') || user.address || '';
+
+          tr.innerHTML = `
+            <td><img class="avatar" src="${user.photo || pictureUrl}" alt="${name}" width="120" height="120" loading="lazy"></td>
+            <td>${user.id ?? ''}</td>
+            <td>${name}</td>
+            <td>${user.email || ''}</td>
+            <td>${user.company?.name || user.company || ''}</td>
+            <td>${address}</td>
+            <td>${user.country || ''}</td>
+            <td>${user.zip || user.postalCode || ''}</td>
+          `;
+
+          tbody.appendChild(tr);
+        });
+
+        // Add personal information as the last entry in the table
+        const personalTr = document.createElement('tr');
+        personalTr.innerHTML = `
+            <td><img class="avatar" src="logo.png" alt="Richard Sungcad" width="120" height="120" loading="lazy"></td>
+            <td>RS-01</td>
+            <td>Richard Sungcad</td>
+            <td>richard.sungcad@nmsc.edu.ph</td>
+            <td>N/A</td>
+            <td>Pagadian City</td>
+            <td>Philippines</td>
+            <td>7016</td>
+        `;
+        tbody.appendChild(personalTr);
+      } catch (error) {
+        statusEl.textContent = 'Error loading users: ' + error.message;
+        statusEl.classList.add('error');
+        console.error(error);
+      }
+    }
+
+    const retryBtn = document.getElementById('retry-btn');
+    retryBtn.addEventListener('click', () => {
+      document.querySelector('.status').textContent = 'Retrying...';
+      document.querySelector('.status').classList.remove('error');
+      document.querySelector('#users-table tbody').innerHTML = '';
+      loadUsers();
+    });
+
+    loadUsers();
+  </script>
+</body>
+</html>
